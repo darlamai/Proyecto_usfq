@@ -117,7 +117,119 @@ lista_indicadores_2026 = procesar_indicadores(2026, archivos)
 
 
 
+def procesar_cartera(archivo, anio):
 
+    # Validar que el archivo corresponda al año solicitado
+    if str(anio) not in archivo.name:
+        return None
+
+    # =========================================================
+    # 1. LECTURA DEL ARCHIVO
+    # =========================================================
+    cartera = pd.read_excel(
+        archivo,
+        sheet_name="COMPOS CART",
+        index_col=0
+    )
+
+    # =========================================================
+    # 2. LIMPIEZA INICIAL
+    # =========================================================
+    cartera = cartera.dropna(how="all")
+    cartera = cartera.reset_index(drop=True)
+    cartera = cartera.dropna(axis=1, how="all")
+
+    # Obtener fecha
+    fecha_encontrada = encontrar_fecha(cartera)
+
+    # Eliminar filas iniciales
+    cartera = cartera.iloc[4:].reset_index(drop=True)
+
+    # Eliminar primera columna
+    cartera = cartera.drop(columns=[cartera.columns[0]])
+
+    # =========================================================
+    # 3. TRANSPONER
+    # =========================================================
+    cartera = cartera.T
+
+    # Primera fila como nombres de columnas
+    cartera.columns = cartera.iloc[0]
+
+    # Eliminar la fila utilizada como encabezado
+    cartera = cartera.iloc[1:].reset_index(drop=True)
+
+    # =========================================================
+    # 4. FILTRAR SOLO BANCOS PRIVADOS
+    # =========================================================
+    cartera = cartera[
+        cartera["CUENTA"].str.startswith("BP ", na=False)
+    ].copy()
+
+    # =========================================================
+    # 5. FEATURE ENGINEERING
+    # =========================================================
+    cartera["CARTERA IMPRODUCTIVA / CARTERA BRUTA"] = (
+        cartera["TOTAL CARTERA IMPRODUCTIVA  (NO DEVENGA INTERESES + VENCIDA)"]
+        / cartera["CARTERA BRUTA"]
+    )
+
+    cartera["CARTERA VENCIDA / CARTERA BRUTA"] = (
+        cartera["TOTAL CARTERA VENCIDA"]
+        / cartera["CARTERA BRUTA"]
+    )
+
+    cartera["CARTERA QUE NO DEVENGA INTERESES / CARTERA BRUTA"] = (
+        cartera["TOTAL CARTERA QUE NO DEVENGA INTERES"]
+        / cartera["CARTERA BRUTA"]
+    )
+
+    cartera["CARTERA REFINANCIADA / CARTERA BRUTA"] = (
+        cartera["CARTERA REFINANCIADA"]
+        / cartera["CARTERA BRUTA"]
+    )
+
+    cartera["CARTERA REESTRUCTURADA / CARTERA BRUTA"] = (
+        cartera["CARTERA REESTRUCTURADA"]
+        / cartera["CARTERA BRUTA"]
+    )
+
+    # =========================================================
+    # 6. SELECCIONAR VARIABLES FINALES
+    # =========================================================
+    variables_finales = [
+        "CUENTA",
+        "CARTERA IMPRODUCTIVA / CARTERA BRUTA",
+        "CARTERA VENCIDA / CARTERA BRUTA",
+        "CARTERA QUE NO DEVENGA INTERESES / CARTERA BRUTA",
+        "CARTERA REFINANCIADA / CARTERA BRUTA",
+        "CARTERA REESTRUCTURADA / CARTERA BRUTA"
+    ]
+
+    cartera = cartera[variables_finales].copy()
+
+    # Cambiar nombre CUENTA por ENTIDAD
+    cartera.rename(
+        columns={"CUENTA": "ENTIDAD"},
+        inplace=True
+    )
+
+    # =========================================================
+    # 7. CREAR MES Y AÑO
+    # =========================================================
+    meses = [
+        "Enero", "Febrero", "Marzo", "Abril",
+        "Mayo", "Junio", "Julio", "Agosto",
+        "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ]
+
+    mes = meses[fecha_encontrada.month - 1]
+    anio_fecha = fecha_encontrada.year
+
+    cartera.insert(0, "MES", mes)
+    cartera.insert(1, "AÑO", anio_fecha)
+
+    return cartera
 
 
 
@@ -267,7 +379,38 @@ for i in archivos:
         cartera.columns = cartera.iloc[0]
         # Eliminar la fila utilizada como encabezado
         cartera = cartera.iloc[1:].reset_index(drop=True)
-        cartera["CARTERA IMPRODUCTIVA / CARTERA BRUTA"]=cartera["TOTAL CARTERA IMPRODUCTIVA (NO DEVENGA INTERESES + VENCIDA)"] / cartera["CARTERA BRUTA"]
+        cartera = cartera[cartera["CUENTA"].str.startswith("BP ", na=False)].copy()
+        cartera["CARTERA IMPRODUCTIVA / CARTERA BRUTA"]=cartera["TOTAL CARTERA IMPRODUCTIVA  (NO DEVENGA INTERESES + VENCIDA)"] / cartera["CARTERA BRUTA"]
+        cartera["CARTERA VENCIDA / CARTERA BRUTA"]=cartera["TOTAL CARTERA VENCIDA"] / cartera["CARTERA BRUTA"]
+        cartera["CARTERA QUE NO DEVENGA INTERESES / CARTERA BRUTA"]=cartera["TOTAL CARTERA QUE NO DEVENGA INTERES"] / cartera["CARTERA BRUTA"]
+        cartera["CARTERA REFINANCIADA / CARTERA BRUTA"]=cartera["CARTERA REFINANCIADA"] / cartera["CARTERA BRUTA"]
+        cartera["CARTERA REESTRUCTURADA / CARTERA BRUTA"]=cartera["CARTERA REESTRUCTURADA"] / cartera["CARTERA BRUTA"]
+        # =========================================================
+        # SELECCIONAR SOLO CUENTA + VARIABLES CREADAS
+        # =========================================================
+
+        variables_finales = [
+            "CUENTA",
+            "CARTERA IMPRODUCTIVA / CARTERA BRUTA",
+            "CARTERA VENCIDA / CARTERA BRUTA",
+            "CARTERA QUE NO DEVENGA INTERESES / CARTERA BRUTA",
+            "CARTERA REFINANCIADA / CARTERA BRUTA",
+            "CARTERA REESTRUCTURADA / CARTERA BRUTA"
+        ]
+
+        cartera = cartera[variables_finales].copy()
+        cartera.rename(columns={"CUENTA":"ENTIDAD"}, inplace=True)
+        meses = [
+                    "Enero", "Febrero", "Marzo", "Abril",
+                    "Mayo", "Junio", "Julio", "Agosto",
+                    "Septiembre", "Octubre", "Noviembre", "Diciembre"
+                ]
+        
+        mes = meses[fecha_encontrada.month - 1]
+        anio = fecha_encontrada.year
+        
+        cartera.insert(0, "MES", mes)
+        cartera.insert(1, "AÑO", anio)
         lista_cartera.append(cartera)
 
 
