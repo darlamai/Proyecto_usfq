@@ -1,5 +1,6 @@
 import pandas as pd
 from pathlib import Path
+import numpy as np
 
 ruta = Path(__file__).parent.parent
 ruta_data=ruta / "data"
@@ -118,8 +119,207 @@ def procesar_indicadores(anio, archivos):
     return lista_indicadores
 
 
+
 lista_indicadores_2025 = procesar_indicadores(2025, archivos)
 lista_indicadores_2026 = procesar_indicadores(2026, archivos)
+
+
+
+
+def procesar_cartera(anio, archivos):
+
+    lista_cartera = []
+
+    meses = [
+        "Enero", "Febrero", "Marzo", "Abril",
+        "Mayo", "Junio", "Julio", "Agosto",
+        "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ]
+
+    for i in archivos:
+
+        # Procesar únicamente archivos del año solicitado
+        if str(anio) in i.name:
+
+            cartera = pd.read_excel(
+                i,
+                sheet_name="COMPOS CART",
+                index_col=0
+            )
+
+            cartera = cartera.dropna(how="all")
+            cartera = cartera.reset_index(drop=True)
+            cartera = cartera.dropna(axis=1, how="all")
+
+            # Obtener fecha del archivo
+            fecha_encontrada = encontrar_fecha(cartera)
+
+            # Eliminar filas iniciales
+            cartera = cartera.iloc[4:].reset_index(drop=True)
+
+            # Eliminar primera columna
+            cartera = cartera.drop(
+                columns=[cartera.columns[0]]
+            )
+
+
+            cartera = cartera.T
+
+            # Primera fila como encabezados
+            cartera.columns = cartera.iloc[0]
+
+            # Eliminar fila utilizada como encabezado
+            cartera = cartera.iloc[1:].reset_index(drop=True)
+
+            cartera = cartera[
+                cartera["CUENTA"].str.startswith(
+                    ("BP ", "BANCO "),
+                    na=False
+                )
+            ].copy()
+
+            # Cambiar nombre CUENTA por ENTIDAD
+            cartera.rename(
+                columns={"CUENTA": "ENTIDAD"},
+                inplace=True
+            )
+
+            mes = meses[fecha_encontrada.month - 1]
+            anio_fecha = fecha_encontrada.year
+
+            cartera.insert(0, "MES", mes)
+            cartera.insert(1, "AÑO", anio_fecha)
+
+            lista_cartera.append(cartera)
+
+    return lista_cartera
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -238,6 +438,365 @@ def procesar_cartera(anio,archivos):
 
     return lista_cartera
 
+
+
+def procesar_balances(archivos):
+
+    lista_balance = []
+
+    meses = [
+        "Enero", "Febrero", "Marzo", "Abril",
+        "Mayo", "Junio", "Julio", "Agosto",
+        "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ]
+
+    cuentas = [
+        "1",
+        "14",
+        "2101",
+        "2103",
+        "3",
+        "11",
+        "13"
+    ]
+
+    for archivo in archivos:
+        balance = pd.read_excel(
+            archivo,
+            sheet_name="BALANCE",
+            index_col=0
+        )
+
+        balance = balance.dropna(how="all")
+        balance = balance.reset_index(drop=True)
+        balance = balance.dropna(axis=1, how="all")
+
+        fecha_encontrada = encontrar_fecha(balance)
+
+        balance = balance.iloc[4:].reset_index(drop=True)
+        balance.columns = balance.iloc[0]
+
+        balance = balance[balance["CÓDIGO"].isin(cuentas)].copy()
+
+        balance = balance.drop(
+            columns=[balance.columns[0]]
+        )
+
+        balance = balance.T
+        balance = balance.reset_index()
+
+        # Primera fila como nombres de columnas
+        balance.columns = balance.iloc[0]
+
+        # Eliminar fila usada como encabezado
+        balance = balance.iloc[1:].reset_index(drop=True)
+
+        balance = balance[
+            balance["CUENTA"].str.startswith(
+                ("BP ", "BANCO "),
+                na=False
+            )
+        ].copy()
+
+        balance.rename(
+            columns={"CUENTA": "ENTIDAD"},
+            inplace=True
+        )
+
+        mes = meses[fecha_encontrada.month - 1]
+        anio = fecha_encontrada.year
+
+        balance.insert(0, "MES", mes)
+        balance.insert(1, "AÑO", anio)
+
+        lista_balance.append(balance)
+
+    return lista_balance
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 lista_cartera_2025=procesar_cartera(2025, archivos)
 
 
@@ -319,6 +878,7 @@ for i in archivos:
 
     # Cambiar nombre CUENTA por ENTIDAD
     #balance.rename(columns={"CUENTA": "ENTIDAD"},inplace=True)
+    balance.rename(columns={"CUENTA":"ENTIDAD"}, inplace=True)
     
     meses = ["Enero", "Febrero", "Marzo", "Abril",
                     "Mayo", "Junio", "Julio", "Agosto",
@@ -331,6 +891,132 @@ for i in archivos:
     balance.insert(1, "AÑO", anio_fecha)
 
     lista_balance.append(balance)
+
+
+def calcular_variaciones_balance(lista_balance):
+
+    # =========================================================
+    # 1. UNIR TODOS LOS DATAFRAMES MENSUALES
+    # =========================================================
+    balance = pd.concat(
+        lista_balance,
+        ignore_index=True
+    )
+
+    # =========================================================
+    # 2. IDENTIFICAR VARIABLES FINANCIERAS
+    # =========================================================
+    columnas_id = ["MES", "AÑO", "ENTIDAD"]
+
+    variables = [
+        col for col in balance.columns
+        if col not in columnas_id
+    ]
+
+    # Convertir variables financieras a numéricas
+    for col in variables:
+        balance[col] = pd.to_numeric(
+            balance[col],
+            errors="coerce"
+        )
+
+    comparaciones = [
+        (2025, 2024),
+        (2026, 2025)
+    ]
+
+    lista_variaciones = []
+
+    for anio_actual, anio_anterior in comparaciones:
+
+        # Datos del año actual
+        actual = balance[
+            balance["AÑO"] == anio_actual
+        ].copy()
+
+        # Datos del año anterior
+        anterior = balance[
+            balance["AÑO"] == anio_anterior
+        ].copy()
+
+        # Cruzar por el mismo MES y la misma CUENTA
+        comparacion = actual.merge(
+            anterior,
+            on=["MES", "ENTIDAD"],
+            how="inner",
+            suffixes=("_ACTUAL", "_ANTERIOR")
+        )
+
+        resultado = comparacion[
+            ["MES", "ENTIDAD"]
+        ].copy()
+
+        resultado["AÑO_ACTUAL"] = anio_actual
+        resultado["AÑO_ANTERIOR"] = anio_anterior
+
+        for variable in variables:
+
+            valor_actual = comparacion[
+                f"{variable}_ACTUAL"
+            ]
+
+            valor_anterior = comparacion[
+                f"{variable}_ANTERIOR"
+            ]
+
+            resultado[f"VAR_{variable}"] = np.where(
+                valor_actual != 0,
+                (valor_actual - valor_anterior) / valor_actual,
+                np.nan
+            )
+
+        lista_variaciones.append(resultado)
+
+    variaciones = pd.concat(
+        lista_variaciones,
+        ignore_index=True
+    )
+
+    return variaciones
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
