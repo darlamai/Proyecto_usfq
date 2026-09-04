@@ -106,6 +106,12 @@ def procesar_indicadores(anio, archivos):
             # Seleccionar columnas
             indicadores = indicadores[columnas_indicadores]
 
+            # FILTRAR SOLO BANCOS PRIVADOS
+    
+            indicadores = indicadores[
+                indicadores["ENTIDAD"].str.startswith("BP ", na=False)
+            ].copy()
+
             # Agregar a la lista
             lista_indicadores.append(indicadores)
 
@@ -117,180 +123,243 @@ lista_indicadores_2026 = procesar_indicadores(2026, archivos)
 
 
 
-def procesar_cartera(archivo, anio):
+def procesar_cartera(anio,archivos):
 
-    # Validar que el archivo corresponda al año solicitado
-    if str(anio) not in archivo.name:
-        return None
+    lista_cartera = []
 
-    # =========================================================
-    # 1. LECTURA DEL ARCHIVO
-    # =========================================================
-    cartera = pd.read_excel(
-        archivo,
-        sheet_name="COMPOS CART",
-        index_col=0
-    )
+    for i in archivos:
 
-    # =========================================================
-    # 2. LIMPIEZA INICIAL
-    # =========================================================
-    cartera = cartera.dropna(how="all")
-    cartera = cartera.reset_index(drop=True)
-    cartera = cartera.dropna(axis=1, how="all")
+        # Validar que el archivo corresponda al año solicitado
+        if str(anio) in i.name:
+            cartera = pd.read_excel(
+                i,
+                sheet_name="COMPOS CART",
+                index_col=0
+            )
 
-    # Obtener fecha
-    fecha_encontrada = encontrar_fecha(cartera)
+            # =========================================================
+            # 2. LIMPIEZA INICIAL
+            # =========================================================
+            cartera = cartera.dropna(how="all")
+            cartera = cartera.reset_index(drop=True)
+            cartera = cartera.dropna(axis=1, how="all")
 
-    # Eliminar filas iniciales
-    cartera = cartera.iloc[4:].reset_index(drop=True)
+            # Obtener fecha
+            fecha_encontrada = encontrar_fecha(cartera)
 
-    # Eliminar primera columna
-    cartera = cartera.drop(columns=[cartera.columns[0]])
+            # Eliminar filas iniciales
+            cartera = cartera.iloc[4:].reset_index(drop=True)
 
-    # =========================================================
-    # 3. TRANSPONER
-    # =========================================================
-    cartera = cartera.T
+            # Eliminar primera columna
+            cartera = cartera.drop(columns=[cartera.columns[0]])
 
-    # Primera fila como nombres de columnas
-    cartera.columns = cartera.iloc[0]
+            # =========================================================
+            # 3. TRANSPONER
+            # =========================================================
+            cartera = cartera.T
 
-    # Eliminar la fila utilizada como encabezado
-    cartera = cartera.iloc[1:].reset_index(drop=True)
+            # Primera fila como nombres de columnas
+            cartera.columns = cartera.iloc[0]
 
-    # =========================================================
-    # 4. FILTRAR SOLO BANCOS PRIVADOS
-    # =========================================================
-    cartera = cartera[
-        cartera["CUENTA"].str.startswith("BP ", na=False)
-    ].copy()
+            # Eliminar la fila utilizada como encabezado
+            cartera = cartera.iloc[1:].reset_index(drop=True)
 
-    # =========================================================
-    # 5. FEATURE ENGINEERING
-    # =========================================================
-    cartera["CARTERA IMPRODUCTIVA / CARTERA BRUTA"] = (
-        cartera["TOTAL CARTERA IMPRODUCTIVA  (NO DEVENGA INTERESES + VENCIDA)"]
-        / cartera["CARTERA BRUTA"]
-    )
+            # =========================================================
+            # 4. FILTRAR SOLO BANCOS PRIVADOS
+            # =========================================================
+            cartera = cartera[
+                cartera["CUENTA"].str.startswith("BP ", na=False)
+            ].copy()
 
-    cartera["CARTERA VENCIDA / CARTERA BRUTA"] = (
-        cartera["TOTAL CARTERA VENCIDA"]
-        / cartera["CARTERA BRUTA"]
-    )
+            # =========================================================
+            # 5. FEATURE ENGINEERING
+            # =========================================================
+            cartera["CARTERA IMPRODUCTIVA / CARTERA BRUTA"] = (
+                cartera["TOTAL CARTERA IMPRODUCTIVA  (NO DEVENGA INTERESES + VENCIDA)"]
+                / cartera["CARTERA BRUTA"]
+            )
 
-    cartera["CARTERA QUE NO DEVENGA INTERESES / CARTERA BRUTA"] = (
-        cartera["TOTAL CARTERA QUE NO DEVENGA INTERES"]
-        / cartera["CARTERA BRUTA"]
-    )
+            cartera["CARTERA VENCIDA / CARTERA BRUTA"] = (
+                cartera["TOTAL CARTERA VENCIDA"]
+                / cartera["CARTERA BRUTA"]
+            )
 
-    cartera["CARTERA REFINANCIADA / CARTERA BRUTA"] = (
-        cartera["CARTERA REFINANCIADA"]
-        / cartera["CARTERA BRUTA"]
-    )
+            cartera["CARTERA QUE NO DEVENGA INTERESES / CARTERA BRUTA"] = (
+                cartera["TOTAL CARTERA QUE NO DEVENGA INTERES"]
+                / cartera["CARTERA BRUTA"]
+            )
 
-    cartera["CARTERA REESTRUCTURADA / CARTERA BRUTA"] = (
-        cartera["CARTERA REESTRUCTURADA"]
-        / cartera["CARTERA BRUTA"]
-    )
+            cartera["CARTERA REFINANCIADA / CARTERA BRUTA"] = (
+                cartera["CARTERA REFINANCIADA"]
+                / cartera["CARTERA BRUTA"]
+            )
 
-    # =========================================================
-    # 6. SELECCIONAR VARIABLES FINALES
-    # =========================================================
-    variables_finales = [
-        "CUENTA",
-        "CARTERA IMPRODUCTIVA / CARTERA BRUTA",
-        "CARTERA VENCIDA / CARTERA BRUTA",
-        "CARTERA QUE NO DEVENGA INTERESES / CARTERA BRUTA",
-        "CARTERA REFINANCIADA / CARTERA BRUTA",
-        "CARTERA REESTRUCTURADA / CARTERA BRUTA"
-    ]
+            cartera["CARTERA REESTRUCTURADA / CARTERA BRUTA"] = (
+                cartera["CARTERA REESTRUCTURADA"]
+                / cartera["CARTERA BRUTA"]
+            )
 
-    cartera = cartera[variables_finales].copy()
+            # =========================================================
+            # 6. SELECCIONAR VARIABLES FINALES
+            # =========================================================
+            variables_finales = [
+                "CUENTA",
+                "CARTERA IMPRODUCTIVA / CARTERA BRUTA",
+                "CARTERA VENCIDA / CARTERA BRUTA",
+                "CARTERA QUE NO DEVENGA INTERESES / CARTERA BRUTA",
+                "CARTERA REFINANCIADA / CARTERA BRUTA",
+                "CARTERA REESTRUCTURADA / CARTERA BRUTA"
+            ]
+
+            cartera = cartera[variables_finales].copy()
+
+            # Cambiar nombre CUENTA por ENTIDAD
+            cartera.rename(
+                columns={"CUENTA": "ENTIDAD"},
+                inplace=True
+            )
+
+            # =========================================================
+            # 7. CREAR MES Y AÑO
+            # =========================================================
+            meses = [
+                "Enero", "Febrero", "Marzo", "Abril",
+                "Mayo", "Junio", "Julio", "Agosto",
+                "Septiembre", "Octubre", "Noviembre", "Diciembre"
+            ]
+
+            mes = meses[fecha_encontrada.month - 1]
+            anio_fecha = fecha_encontrada.year
+
+            cartera.insert(0, "MES", mes)
+            cartera.insert(1, "AÑO", anio_fecha)
+
+            lista_cartera.append(cartera)
+
+    return lista_cartera
+
+lista_cartera_2025=procesar_cartera(2025, archivos)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+lista_balance=[]
+for i in archivos:
+    balance=pd.read_excel(i, sheet_name="BALANCE", index_col=0)
+    balance = balance.dropna(how="all")
+    balance = balance.reset_index(drop=True)
+    balance = balance.dropna(axis=1, how="all")
+    fecha_encontrada=encontrar_fecha(balance)
+    balance = balance.iloc[4:].reset_index(drop=True)
+    balance.columns = balance.iloc[0]
+    cuentas = ["1","14","2101","2103","3","11","13"]
+    balance = balance[balance["CÓDIGO"].isin(cuentas)].copy()
+    balance = balance.drop(columns=[balance.columns[0]])
+    balance = balance.T
+    balance = balance.reset_index()
+    balance.columns = balance.iloc[0]
+    # Eliminar la primera fila utilizada como encabezado
+    balance = balance.iloc[1:].reset_index(drop=True)
+    balance = balance[balance["CUENTA"].str.startswith(("BP ", "BANCO "), na=False)].copy()
 
     # Cambiar nombre CUENTA por ENTIDAD
-    cartera.rename(
-        columns={"CUENTA": "ENTIDAD"},
-        inplace=True
-    )
-
-    # =========================================================
-    # 7. CREAR MES Y AÑO
-    # =========================================================
-    meses = [
-        "Enero", "Febrero", "Marzo", "Abril",
-        "Mayo", "Junio", "Julio", "Agosto",
-        "Septiembre", "Octubre", "Noviembre", "Diciembre"
-    ]
-
+    #balance.rename(columns={"CUENTA": "ENTIDAD"},inplace=True)
+    
+    meses = ["Enero", "Febrero", "Marzo", "Abril",
+                    "Mayo", "Junio", "Julio", "Agosto",
+                    "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    
     mes = meses[fecha_encontrada.month - 1]
     anio_fecha = fecha_encontrada.year
+    
+    balance.insert(0, "MES", mes)
+    balance.insert(1, "AÑO", anio_fecha)
 
-    cartera.insert(0, "MES", mes)
-    cartera.insert(1, "AÑO", anio_fecha)
-
-    return cartera
-
-
+    lista_balance.append(balance)
 
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    balance = balance.dropna(axis=1, how="all")
+    fecha_encontrada=encontrar_fecha(balance)
+    balance = balance.iloc[4:].reset_index(drop=True)
+    balance = balance.drop(columns=[balance.columns[0]])
+    # Transponer
+    balance = balance.T
+    # Primera fila como nombres de columnas
+    balance.columns = balance.iloc[0]
+    # Eliminar la fila utilizada como encabezado
+    balance = balance.iloc[1:].reset_index(drop=True)
+    cuentas = [
+    "CUENTA",
+    "TOTAL ACTIVO",
+    "CARTERA DE CRÉDITOS",
+    "Depósitos a la vista",
+    "Depósitos a plazo",
+    "TOTAL PATRIMONIO",
+    "FONDOS DISPONIBLES",
+    "INVERSIONES"]
+    balance = balance[cuentas].copy()
+    balance = balance[balance["CUENTA"].str.startswith(("BP ", "BANCO "), na=False)].copy()
+    lista_balance.append(balance)
+        # Transponer
 
 
 
