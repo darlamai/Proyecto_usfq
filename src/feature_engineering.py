@@ -1,5 +1,5 @@
 import pandas as pd 
-
+import numpy as np
 
 def feature_engineering_cartera(lista_cartera):
 
@@ -7,47 +7,63 @@ def feature_engineering_cartera(lista_cartera):
 
     for cartera in lista_cartera:
 
-        # Trabajar sobre copia para no modificar la lista original
         cartera = cartera.copy()
 
         # =====================================================
-        # 1. FEATURE ENGINEERING
+        # 1. CONVERTIR VARIABLES A NUMÉRICAS
+        # =====================================================
+
+        columnas_numericas = [
+            "TOTAL CARTERA IMPRODUCTIVA  (NO DEVENGA INTERESES + VENCIDA)",
+            "TOTAL CARTERA VENCIDA",
+            "TOTAL CARTERA QUE NO DEVENGA INTERES",
+            "CARTERA REFINANCIADA",
+            "CARTERA REESTRUCTURADA",
+            "CARTERA BRUTA"
+        ]
+
+        for columna in columnas_numericas:
+            cartera[columna] = pd.to_numeric(
+                cartera[columna],
+                errors="coerce"
+            )
+
+        denominador = cartera["CARTERA BRUTA"].replace(0, np.nan)
+
+        # =====================================================
+        # 2. FEATURE ENGINEERING
         # =====================================================
 
         cartera["CARTERA IMPRODUCTIVA / CARTERA BRUTA"] = (
             cartera[
                 "TOTAL CARTERA IMPRODUCTIVA  (NO DEVENGA INTERESES + VENCIDA)"
-            ]
-            / cartera["CARTERA BRUTA"]
+            ].div(denominador)
         )
 
         cartera["CARTERA VENCIDA / CARTERA BRUTA"] = (
-            cartera["TOTAL CARTERA VENCIDA"]
-            / cartera["CARTERA BRUTA"]
+            cartera["TOTAL CARTERA VENCIDA"].div(denominador)
         )
 
         cartera["CARTERA QUE NO DEVENGA INTERESES / CARTERA BRUTA"] = (
-            cartera["TOTAL CARTERA QUE NO DEVENGA INTERES"]
-            / cartera["CARTERA BRUTA"]
+            cartera["TOTAL CARTERA QUE NO DEVENGA INTERES"].div(denominador)
         )
 
         cartera["CARTERA REFINANCIADA / CARTERA BRUTA"] = (
-            cartera["CARTERA REFINANCIADA"]
-            / cartera["CARTERA BRUTA"]
+            cartera["CARTERA REFINANCIADA"].div(denominador)
         )
 
         cartera["CARTERA REESTRUCTURADA / CARTERA BRUTA"] = (
-            cartera["CARTERA REESTRUCTURADA"]
-            / cartera["CARTERA BRUTA"]
+            cartera["CARTERA REESTRUCTURADA"].div(denominador)
         )
 
         # =====================================================
-        # 2. SELECCIONAR VARIABLES FINALES
+        # 3. SELECCIONAR VARIABLES FINALES
         # =====================================================
+
         variables_finales = [
             "MES",
             "AÑO",
-            "CUENTA",
+            "ENTIDAD",
             "CARTERA IMPRODUCTIVA / CARTERA BRUTA",
             "CARTERA VENCIDA / CARTERA BRUTA",
             "CARTERA QUE NO DEVENGA INTERESES / CARTERA BRUTA",
@@ -55,17 +71,7 @@ def feature_engineering_cartera(lista_cartera):
             "CARTERA REESTRUCTURADA / CARTERA BRUTA"
         ]
 
-        cartera = cartera[
-            variables_finales
-        ].copy()
-
-        # =====================================================
-        # 3. RENOMBRAR ENTIDAD
-        # =====================================================
-        cartera.rename(
-            columns={"CUENTA": "ENTIDAD"},
-            inplace=True
-        )
+        cartera = cartera[variables_finales].copy()
 
         lista_cartera_fe.append(cartera)
 
@@ -75,17 +81,13 @@ def feature_engineering_cartera(lista_cartera):
 
 def calcular_variaciones_balance(lista_balance):
 
-    # =========================================================
-    # 1. UNIR TODOS LOS DATAFRAMES MENSUALES
-    # =========================================================
+
     balance = pd.concat(
         lista_balance,
         ignore_index=True
     )
 
-    # =========================================================
-    # 2. IDENTIFICAR VARIABLES FINANCIERAS
-    # =========================================================
+
     columnas_id = ["MES", "AÑO", "ENTIDAD"]
 
     variables = [
@@ -101,8 +103,11 @@ def calcular_variaciones_balance(lista_balance):
         )
 
     comparaciones = [
-        (2025, 2024),
-        (2026, 2025)
+        (2022,2021),
+        (2023,2022),
+        (2024,2023),
+        (2025,2024),
+        (2026,2025)
     ]
 
     lista_variaciones = []
@@ -157,8 +162,44 @@ def calcular_variaciones_balance(lista_balance):
         ignore_index=True
     )
 
+    columnas_finales = [
+        "MES",
+        "AÑO_ACTUAL",
+        "ENTIDAD",
+        "VAR_FONDOS DISPONIBLES",
+        "VAR_INVERSIONES",
+        "VAR_CARTERA DE CRÉDITOS",
+        "VAR_TOTAL ACTIVO",
+        "VAR_Depósitos a la vista",
+        "VAR_Depósitos a plazo",
+        "VAR_TOTAL PATRIMONIO"
+    ]
+
+    variaciones = variaciones[columnas_finales].copy()
+
+    variaciones = variaciones.rename(
+        columns={"AÑO_ACTUAL": "AÑO"}
+    )
+
     return variaciones
 
 
+def unir_todos_indicadores(indicadores, indicadores_cartera):
 
+    lista_unida = []
+
+    for df_indicadores, df_cartera in zip(
+        indicadores,
+        indicadores_cartera
+    ):
+
+        df_unido = df_indicadores.merge(
+            df_cartera,
+            on=["AÑO", "MES", "ENTIDAD"],
+            how="left"
+        )
+
+        lista_unida.append(df_unido)
+
+    return lista_unida
 
