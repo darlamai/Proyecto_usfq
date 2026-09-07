@@ -187,6 +187,11 @@ def procesar_cartera(anio, archivos, meses):
             cartera = cartera.iloc[1:].reset_index(drop=True)
 
 
+            # COMPROBAR COLUMNAS DUPLICADAS
+            #print(i.name)
+            #print(cartera.columns[cartera.columns.duplicated()].tolist())
+
+
             cartera = cartera[
                 cartera["CUENTA"].str.startswith(
                     ("BP ", "BANCO "),
@@ -215,6 +220,24 @@ def procesar_cartera(anio, archivos, meses):
 
             cartera.insert(0, "MES", mes)
             cartera.insert(1, "AÑO", anio_fecha)
+
+            cartera=cartera[["MES","AÑO","ENTIDAD",
+            "TOTAL CARTERA IMPRODUCTIVA  (NO DEVENGA INTERESES + VENCIDA)",
+            "TOTAL CARTERA VENCIDA",
+            "TOTAL CARTERA QUE NO DEVENGA INTERES",
+            "CARTERA REFINANCIADA",
+            "CARTERA REESTRUCTURADA",
+            "CARTERA BRUTA"]]
+
+            columnas_id = ["MES", "AÑO", "ENTIDAD"]
+
+
+            for columna in cartera.columns:
+                if columna not in columnas_id:
+                    cartera[columna] = pd.to_numeric(
+                        cartera[columna],
+                        errors="coerce"
+                    )
 
             lista_cartera.append(cartera)
 
@@ -283,6 +306,17 @@ def procesar_balances(archivos, meses,cuentas):
 
         balance.insert(0, "MES", mes)
         balance.insert(1, "AÑO", anio)
+
+
+        columnas_id = ["MES", "AÑO", "ENTIDAD"]
+
+
+        for columna in balance.columns:
+            if columna not in columnas_id:
+                balance[columna] = pd.to_numeric(
+                    balance[columna],
+                    errors="coerce"
+                )
 
         lista_balance.append(balance)
 

@@ -148,11 +148,23 @@ def calcular_variaciones_balance(lista_balance):
             valor_anterior = comparacion[
                 f"{variable}_ANTERIOR"
             ]
-
             resultado[f"VAR_{variable}"] = np.where(
-                valor_actual != 0,
-                (valor_actual - valor_anterior) / valor_actual,
-                np.nan
+                # Ambos son 0 o nulos → sin variación
+                ((valor_actual.fillna(0) == 0) & (valor_anterior.fillna(0) == 0)),
+                0,
+
+                # Actual distinto de 0 y anterior igual a 0 → 0
+                np.where(
+                    (valor_actual != 0) & (valor_anterior == 0),
+                    0,
+
+                    # Si el anterior no es 0 → calcular variación
+                    np.where(
+                        valor_anterior != 0,
+                        (valor_actual - valor_anterior) / valor_anterior,
+                        np.nan
+                    )
+                )
             )
 
         lista_variaciones.append(resultado)
