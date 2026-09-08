@@ -1,19 +1,27 @@
-import pandas as pd
-from pathlib import Path
+###---------------------------------------------SCRIPT DE CARGA Y PROCESAMIENTO DE LOS INDICADORES----------------------------------
+### Nombre: Darlyn Ludeña
+### Fecha: 11/09/2026
+
+import pandas as pd 
+from pathlib import Path # Librería que permite trabajar con rutas y directorios
 import numpy as np
 
-ruta = Path(__file__).parent.parent
-ruta_data=ruta / "data"
-archivos=list(ruta_data.rglob("*.xlsx"))
+ruta = Path(__file__).parent.parent #Se obtiene la ruta raíz del proyecto
+ruta_data=ruta / "data" #Se construye la ruta hacia la carpeta data
+archivos=list(ruta_data.rglob("*.xlsx")) # Permite buscar todos los archivos de excel dentro de data y sus subcarpetas # El resultado es una lista de objetos Path
 
+# =========================
+# CONSTANTES
+# =========================
 
-
+### Se enlistan los meses del año para ser añadidos en la columna Mes del dataset
 meses = [
         "Enero", "Febrero", "Marzo", "Abril",
         "Mayo", "Junio", "Julio", "Agosto",
         "Septiembre", "Octubre", "Noviembre", "Diciembre"
     ]
 
+## Listado de los nombres de los indicadores financieros más mes, año y entidad.
 columnas_indicadores = [
         "MES",
         "AÑO",
@@ -40,7 +48,9 @@ columnas_indicadores = [
     ]
 
 
-
+# Código Contable de las variables extraídas de balance, entre ellas:
+# 1-> Activos, 3-> Patrimonio, 14-> Catera de Créditos, 11-> Fondos disponibles
+# 13-> Inversiones, 2101-> Depósitos a la vista , 2103-> Depósitos a plazo
 cuentas = [
         "1",
         "14",
@@ -52,17 +62,25 @@ cuentas = [
     ]
 
 
+# =========================
+# FUNCIONES
+# =========================
+
 
 def encontrar_fecha(df, n_columnas=3):
+
+    """Recorre la primeras `n_columnas` de df buscando la primera fecha válida.
+    Cuando la encuentra devuelve la primera fecha encontrada según el orden de las filas en 
+    formato datetime, caso contrario devuelve None"""
+
     for col in df.columns[:n_columnas]:
 
         fechas = pd.to_datetime(
             df[col],
-            errors="coerce",
-            dayfirst=True,
-            format="mixed"
+            errors="coerce", # Si algún valor no puede convertirse a fecha, se reempla por NaT.
+            dayfirst=True, #interpreta primero el día, luego el mes
+            format="mixed"  # reconoce cualquier formato de fecha
         )
-
         if fechas.notna().any():
             idx = fechas.first_valid_index()
             return fechas.loc[idx]
@@ -72,6 +90,12 @@ def encontrar_fecha(df, n_columnas=3):
 
 
 def procesar_indicadores(anio, archivos,meses, columnas_indicadores):
+
+    """Procesa los archivos de la hoja INDICADORES para un año específico, estandariza su estructura, incorpora las variables MES Y AÑO,
+       homologa nombres de entidades y filtra únicamente a las entidades.
+       Los parámetros de entrada son anio, archivos (path de excels), meses (nombres de meses en letras)
+       y columnas_indicadores(lista de indicadores financieros).
+       La salida es una lista de 12 dataframes, cada uno representa un mes del anio especifico llamado en el input de la función."""
 
     lista_indicadores = []
     for i in archivos:
@@ -118,14 +142,18 @@ def procesar_indicadores(anio, archivos,meses, columnas_indicadores):
             mes = meses[fecha_encontrada.month - 1]
             anio_fecha = fecha_encontrada.year
 
-            # Insertar MES y AÑO
+            # Insertar MES y AÑO como las columnas iniciales de cada dataframe
             indicadores.insert(0, "MES", mes)
             indicadores.insert(1, "AÑO", anio_fecha)
 
             # Seleccionar columnas
             indicadores = indicadores[columnas_indicadores]
 
-            # CAMBIAR NOMBRE DE LA ENTIDAD
+            # Se realiza una homologación de nombres para garantizar la continuidad de las series históricas. 
+            # Por ejemplo, Banco FINCA pasó a denominarse Banco Amibank en 2023, 
+            # mientras que Banco D-MIRO fue adquirido por el Grupo Financiero Atlántida en 2024. 
+            # Sin esta homologación, una misma entidad podría aparecer bajo distintos nombres en diferentes boletines, 
+            # afectando los análisis de evolución y comparabilidad
             indicadores["ENTIDAD"] = indicadores["ENTIDAD"].replace({
                 "BP FINCA S.A.": "BP FINCA S.A./BANCO AMIBANK S.A.",
                 "BANCO AMIBANK S.A.": "BP FINCA S.A./BANCO AMIBANK S.A.",
@@ -134,8 +162,7 @@ def procesar_indicadores(anio, archivos,meses, columnas_indicadores):
                 "BP COMERCIAL DE MANABI":"BP BANCO COMERCIAL DE MANABI"
             })
 
-            # FILTRAR SOLO BANCOS PRIVADOS
-    
+ 
             indicadores = indicadores[
                 indicadores["ENTIDAD"].str.startswith(("BP ", "BANCO "), na=False)
             ].copy()
@@ -149,6 +176,11 @@ def procesar_indicadores(anio, archivos,meses, columnas_indicadores):
 
 def procesar_cartera(anio, archivos, meses):
 
+    """Procesa los archivos de la hoja COMPOS CART para un año específico, estandariza su estructura, incorpora las variables MES Y AÑO,
+    homologa nombres y filtra a las de entidades.
+    Los parámetros de entrada son anio, archivos (path de excels), meses (nombres de meses en letras)
+    La salida es una lista de 12 dataframes, donde cada uno representa un mes del año especifico llamado en el input de la función."""
+
     lista_cartera = []
 
     for i in archivos:
@@ -161,7 +193,7 @@ def procesar_cartera(anio, archivos, meses):
                 sheet_name="COMPOS CART",
                 index_col=0
             )
-
+            # Limpieza inicial
             cartera = cartera.dropna(how="all")
             cartera = cartera.reset_index(drop=True)
             cartera = cartera.dropna(axis=1, how="all")
@@ -176,8 +208,7 @@ def procesar_cartera(anio, archivos, meses):
             cartera = cartera.drop(
                 columns=[cartera.columns[0]]
             )
-
-
+            # Se transpone el dataframe
             cartera = cartera.T
 
             # Primera fila como encabezados
@@ -185,12 +216,6 @@ def procesar_cartera(anio, archivos, meses):
 
             # Eliminar fila utilizada como encabezado
             cartera = cartera.iloc[1:].reset_index(drop=True)
-
-
-            # COMPROBAR COLUMNAS DUPLICADAS
-            #print(i.name)
-            #print(cartera.columns[cartera.columns.duplicated()].tolist())
-
 
             cartera = cartera[
                 cartera["CUENTA"].str.startswith(
@@ -205,7 +230,11 @@ def procesar_cartera(anio, archivos, meses):
                 inplace=True
             )
 
-            # CAMBIAR NOMBRE DE LA ENTIDAD
+            # Se realiza una homologación de nombres para garantizar la continuidad de las series históricas. 
+            # Por ejemplo, Banco FINCA pasó a denominarse Banco Amibank en 2023, 
+            # mientras que Banco D-MIRO fue adquirido por el Grupo Financiero Atlántida en 2024. 
+            # Sin esta homologación, una misma entidad podría aparecer bajo distintos nombres en diferentes boletines, 
+            # afectando los análisis de evolución y comparabilidad
             cartera["ENTIDAD"] = cartera["ENTIDAD"].replace({
                 "BP FINCA S.A.": "BP FINCA S.A./BANCO AMIBANK S.A.",
                 "BANCO AMIBANK S.A.": "BP FINCA S.A./BANCO AMIBANK S.A.",
@@ -214,13 +243,14 @@ def procesar_cartera(anio, archivos, meses):
                 "BP COMERCIAL DE MANABI":"BP BANCO COMERCIAL DE MANABI"
             })
 
-
             mes = meses[fecha_encontrada.month - 1]
             anio_fecha = fecha_encontrada.year
 
+            # Insertar MES y AÑO como las columnas iniciales de cada dataframe
             cartera.insert(0, "MES", mes)
             cartera.insert(1, "AÑO", anio_fecha)
 
+            # Se filtra solamente las columnas empleadas para el feature de los indicadores de cartera
             cartera=cartera[["MES","AÑO","ENTIDAD",
             "TOTAL CARTERA IMPRODUCTIVA  (NO DEVENGA INTERESES + VENCIDA)",
             "TOTAL CARTERA VENCIDA",
@@ -231,12 +261,11 @@ def procesar_cartera(anio, archivos, meses):
 
             columnas_id = ["MES", "AÑO", "ENTIDAD"]
 
-
             for columna in cartera.columns:
                 if columna not in columnas_id:
                     cartera[columna] = pd.to_numeric(
                         cartera[columna],
-                        errors="coerce"
+                        errors="coerce"  # Si algún valor no puede convertirse, lo reemplaza por NaN en lugar de generar un error.
                     )
 
             lista_cartera.append(cartera)
@@ -244,7 +273,16 @@ def procesar_cartera(anio, archivos, meses):
     return lista_cartera
 
 
+
+
+
 def procesar_balances(archivos, meses,cuentas):
+
+    """Procesa los archivos de balance general BALANCE, extrae las cuentas de interés, estandariza la estructura de los datos, 
+    incorpora las variables MES y AÑO, homologa nombres de entidades y devuelve una lista de DataFrames.
+     Los parámetros de entrada son archivos (path de excels), meses (nombre de meses en letras)
+     cuentas (códigos contables de los boletines). Y devuelve una lista de 12 dataframes con los balances  
+     procesadoss, donde cada uno representa un mes del año especifico llamado en el input de la función."""
 
     lista_balance = []
 
@@ -292,6 +330,12 @@ def procesar_balances(archivos, meses,cuentas):
             inplace=True
         )
 
+        # Se realiza una homologación de nombres para garantizar la continuidad de las series históricas. 
+        # Por ejemplo, Banco FINCA pasó a denominarse Banco Amibank en 2023, 
+        # mientras que Banco D-MIRO fue adquirido por el Grupo Financiero Atlántida en 2024. 
+        # Sin esta homologación, una misma entidad podría aparecer bajo distintos nombres en diferentes boletines, 
+        # afectando los análisis de evolución y comparabilidad
+
         balance["ENTIDAD"] = balance["ENTIDAD"].replace({
                 "BP FINCA S.A.": "BP FINCA S.A./BANCO AMIBANK S.A.",
                 "BANCO AMIBANK S.A.": "BP FINCA S.A./BANCO AMIBANK S.A.",
@@ -304,6 +348,7 @@ def procesar_balances(archivos, meses,cuentas):
         mes = meses[fecha_encontrada.month - 1]
         anio = fecha_encontrada.year
 
+        # Insertar MES y AÑO como las columnas iniciales de cada dataframe
         balance.insert(0, "MES", mes)
         balance.insert(1, "AÑO", anio)
 
