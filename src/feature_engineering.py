@@ -1,3 +1,7 @@
+###---------------------------------SCRIPT FEATURE ENGINEERING----------------------------------
+### Nombre: Darlyn Ludeña
+### Fecha: 11/09/2026
+
 import pandas as pd 
 import numpy as np
 
@@ -9,10 +13,7 @@ def feature_engineering_cartera(lista_cartera):
 
         cartera = cartera.copy()
 
-        # =====================================================
-        # 1. CONVERTIR VARIABLES A NUMÉRICAS
-        # =====================================================
-
+        ## Se seleccionan las variables de COMPOS CART seleccionadas para el feature engineering.
         columnas_numericas = [
             "TOTAL CARTERA IMPRODUCTIVA  (NO DEVENGA INTERESES + VENCIDA)",
             "TOTAL CARTERA VENCIDA",
@@ -22,17 +23,18 @@ def feature_engineering_cartera(lista_cartera):
             "CARTERA BRUTA"
         ]
 
+
+        # Se transforman las columnas de los indicadores a numéricas
         for columna in columnas_numericas:
             cartera[columna] = pd.to_numeric(
                 cartera[columna],
                 errors="coerce"
             )
-
+        # Se pasan los valores nulos de la Cartera Bruta en 0, puesto que corresponde
+        # al denominador de todas 
         denominador = cartera["CARTERA BRUTA"].replace(0, np.nan)
 
-        # =====================================================
-        # 2. FEATURE ENGINEERING
-        # =====================================================
+        ## Feature Engineering
 
         cartera["CARTERA IMPRODUCTIVA / CARTERA BRUTA"] = (
             cartera[

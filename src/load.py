@@ -1,4 +1,4 @@
-###---------------------------------------------SCRIPT DE CARGA Y PROCESAMIENTO DE LOS INDICADORES----------------------------------
+###-------------------------------------SCRIPT DE CARGA Y PROCESAMIENTO DE LOS INDICADORES----------------------------------
 ### Nombre: Darlyn Ludeña
 ### Fecha: 11/09/2026
 
