@@ -71,7 +71,9 @@ def encontrar_fecha(df, n_columnas=3):
 
     """Recorre la primeras `n_columnas` de df buscando la primera fecha válida.
     Cuando la encuentra devuelve la primera fecha encontrada según el orden de las filas en 
-    formato datetime, caso contrario devuelve None"""
+    formato datetime, caso contrario devuelve None
+    Parámetros-> df: dataframe a analizar, n_columnas: número de columnas sobre la cual se realiza la búsqueda.
+    Salida-> None o la fecha encontrada dependiendo el caso."""
 
     for col in df.columns[:n_columnas]:
 
@@ -93,9 +95,9 @@ def procesar_indicadores(anio, archivos,meses, columnas_indicadores):
 
     """Procesa los archivos de la hoja INDICADORES para un año específico, estandariza su estructura, incorpora las variables MES Y AÑO,
        homologa nombres de entidades y filtra únicamente a las entidades.
-       Los parámetros de entrada son anio, archivos (path de excels), meses (nombres de meses en letras)
+       Parámetros-> anio, archivos (path de excels), meses (nombres de meses en letras)
        y columnas_indicadores(lista de indicadores financieros).
-       La salida es una lista de 12 dataframes, cada uno representa un mes del anio especifico llamado en el input de la función."""
+       Salida-> lista_indicadores: una lista de 12 dataframes, cada uno representa un mes del anio especifico llamado en el input de la función."""
 
     lista_indicadores = []
     for i in archivos:
@@ -178,8 +180,8 @@ def procesar_cartera(anio, archivos, meses):
 
     """Procesa los archivos de la hoja COMPOS CART para un año específico, estandariza su estructura, incorpora las variables MES Y AÑO,
     homologa nombres y filtra a las de entidades.
-    Los parámetros de entrada son anio, archivos (path de excels), meses (nombres de meses en letras)
-    La salida es una lista de 12 dataframes, donde cada uno representa un mes del año especifico llamado en el input de la función."""
+    Parámetros-> anio, archivos (path de excels), meses (nombres de meses en letras)
+    Salida-> lista_cartera: lista de 12 dataframes, donde cada uno representa un mes del año especifico llamado en el input de la función."""
 
     lista_cartera = []
 
@@ -280,8 +282,9 @@ def procesar_balances(archivos, meses,cuentas):
 
     """Procesa los archivos de balance general BALANCE, extrae las cuentas de interés, estandariza la estructura de los datos, 
     incorpora las variables MES y AÑO, homologa nombres de entidades y devuelve una lista de DataFrames.
-     Los parámetros de entrada son archivos (path de excels), meses (nombre de meses en letras)
-     cuentas (códigos contables de los boletines). Y devuelve una lista de 12 dataframes con los balances  
+    Parámetros-> archivos (path de excels), meses (nombre de meses en letras)
+     cuentas (códigos contables de los boletines). 
+    Salida-> lista_balance:devuelve una lista de 12 dataframes con los balances  
      procesadoss, donde cada uno representa un mes del año especifico llamado en el input de la función."""
 
     lista_balance = []

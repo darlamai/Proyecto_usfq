@@ -1,5 +1,9 @@
+###-------------------------------------SCRIPT PARA EDA (Exploratory Data Analysis)----------------------------------·##
+### Nombre: Darlyn Ludeña
+### Fecha: 11/09/2026
+
+
 import os
-import matplotlib
 from matplotlib.colors import ListedColormap, BoundaryNorm
 import numpy as np
 import pandas as pd
@@ -7,13 +11,23 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 import re
+from pathlib import Path
 
+# Ruta de la raíz del proyecto
+RAIZ_PROYECTO = Path(__file__).resolve().parent.parent
 
-
-
+#--------------------------------------------------------
+### FUNCIONES DE APOYO PARA EDA
+#---------------------------------------
 
 def obtener_columnas_numericas(df, columnas_excluir=None):
 
+    """ Identifica las columnas numéricas de un DataFrame, excluyendo las variables AÑO, MES y ENTIDAD. 
+    Parámetros-> df : dataframe que contiene las variables a evaluar, columnas_excluir : lista con nombres de columnas que no deben considerarse. 
+    Salida-> columnas_numericas: lista de columnas numéricas seleccionadas. """
+
+
+    # Si no se especifican columnas a excluir, se utilizan las variables # de identificación del conjunto de datos.
     if columnas_excluir is None:
         columnas_excluir = ["MES", "AÑO", "ENTIDAD"]
 
@@ -29,6 +43,10 @@ def obtener_columnas_numericas(df, columnas_excluir=None):
 
 def estadistica_descriptiva(df, columnas=None):
 
+    """ Calcula estadísticas descriptivas para las variables seleccionadas. 
+    Parámetros-> df : dataframe que contiene las variables a analizar. columnas : lista de columnas sobre las cuales calcular las estadísticas. 
+    Salidas-> estadisticas: dataframe con las estadísticas descriptivas de las variables seleccionadas. """
+
     if columnas is None:
         columnas = obtener_columnas_numericas(df)
 
@@ -37,22 +55,25 @@ def estadistica_descriptiva(df, columnas=None):
     return estadisticas
 
 
-#########DIAGRAMA DE LÍNEAS########################################################3
-
-# PALETA DE COLORES PARA LAS ENTIDADES
-# ============================================================
-
+#--------------------------------------------------------
+### FUNCIONES DE GRÁFICAS Y VISUALIZACIONES
+#-------------------------------------------------------
 
 
-def graficar_indicadores(
-    df,
-    indicadores,
-    carpeta="graficas_EDA_indicadores_financieros",
-    indicadores_notebook=None
-):
-    
-    # Crear carpeta si no existe
-    os.makedirs(carpeta, exist_ok=True)
+### FUNCIONES DE LÍNEAS-----------------------------------
+
+def graficar_indicadores(df,indicadores,carpeta="graficas_EDA_indicadores_financieros",indicadores_notebook=None):
+
+    """ Genera gráficos de líneas para analizar la evolución temporal de los indicadores financieros por entidad. 
+    Parámetros-> df : dataframe con los indicadores y las variables de identificación, indicadores : lista de indicadores que se desean graficar, carpeta : str, nombre de la carpeta donde se guardarán los gráficos, 
+    indicadores_notebook : lista de indicadores que se mostrarán directamente en el notebook. 
+    Salida-> ninguna, con print se muestra o guarda los gráficos generados. """
+
+
+    ruta_carpeta=RAIZ_PROYECTO / carpeta
+
+    # Crear la carpeta de gráficos en la raíz del proyecto si no existe
+    ruta_carpeta.mkdir(parents=True, exist_ok=True)
     
     # Lista vacía si no se especifican indicadores para mostrar
     if indicadores_notebook is None:
@@ -61,7 +82,7 @@ def graficar_indicadores(
 
     entidades = df["ENTIDAD"].dropna().unique()
 
-    # Combinar tab10 y tab20 para tener más colores diferenciables
+    # Combinar las paletas por default tab10 y tab20 para tener más colores diferenciables
     colores = (
         list(sns.color_palette("tab10")) +
         list(sns.color_palette("tab20"))
@@ -132,15 +153,11 @@ def graficar_indicadores(
             
             nombre_archivo = nombre_archivo.replace("/", "_")
             nombre_archivo = nombre_archivo.replace(" ", "_")
-            
-            ruta = os.path.join(
-                carpeta,
-                f"{nombre_archivo}.png"
-            )
-            
+
+            ruta = ruta_carpeta / f"{nombre_archivo}.png"
             plt.savefig(
                 ruta,
-                dpi=300,
+                dpi=300, # resolución en puntos por pulgada
                 bbox_inches="tight"
             )
             
@@ -149,7 +166,7 @@ def graficar_indicadores(
             print(f"Guardado: {ruta}")
 
 
-###############HEATMAPS##################################################################33
+### HEATMAPS-----------------------------------------------------
 
 def generar_heatmaps(
     df,
@@ -158,7 +175,17 @@ def generar_heatmaps(
     carpeta="graficas_EDA"
 ):
 
-    os.makedirs(carpeta, exist_ok=True)
+    """ Genera heatmaps para analizar la evolución de los indicadores financieros por entidad y año-mes. 
+    Parámetros->df : dataframe que contiene los indicadores financieros, indicadores : lista de indicadores que se desean graficar, 
+    indicadores_notebook : lista de indicadores que se mostrarán directamente en el notebook, carpeta : str, nombre de la carpeta donde se guardarán los gráficos. 
+    Salida-> ninguna, con print se muestra o guarda los gráficos generados. """
+
+    # Se construye la ruta de la carpeta de gráficos dentro de la 
+    #  raíz del proyecto. 
+    ruta_carpeta = RAIZ_PROYECTO / carpeta 
+
+    # Se crea la carpeta si no existe. 
+    ruta_carpeta.mkdir(parents=True, exist_ok=True)
 
     if indicadores_notebook is None:
         indicadores_notebook = []
@@ -182,7 +209,8 @@ def generar_heatmaps(
         fig, ax = plt.subplots(figsize=(18, 10))
 
         # --------------------------------------------------
-        # Excepción: SUFICIENCIA PATRIMONIAL
+        # En el caso de la suficiencia patrimonial se establecen los límites porque
+        # regulatoriamente debe fijarse el límite del 9%
         # --------------------------------------------------
         if indicador == "SUFICIENCIA PATRIMONIAL":
 
@@ -209,6 +237,9 @@ def generar_heatmaps(
 
             cmap = ListedColormap(colores)
 
+            # BoundaryNorm asigna cada valor al intervalo definido 
+            #  en "limites" y, por tanto, al color correspondiente.
+
             norm = BoundaryNorm(
                 limites,
                 cmap.N
@@ -227,7 +258,8 @@ def generar_heatmaps(
             )
 
         # --------------------------------------------------
-        # Excepción: COBERTURA DE LA CARTERA PROBLEMÁTICA
+        # En el caso de la cobertura de la cartera problemática se fija un límite del 100% 
+        # puesto que permite diferenciar si la entidad logra cubrir la cartera en mora.
         # --------------------------------------------------
         elif indicador == "COBERTURA DE LA CARTERA PROBLEMÁTICA":
 
@@ -271,9 +303,9 @@ def generar_heatmaps(
                 ax=ax
             )
 
-        # --------------------------------------------------
-        # Resto de indicadores: escala automática
-        # --------------------------------------------------
+        #Para el resto de indicadores se emplea la escala automática puesto que en ella
+        #se puede diferenciar sin problema los que están por debajo del límite regulatorio 
+        # y los que no.
         else:
 
             sns.heatmap(
@@ -291,7 +323,7 @@ def generar_heatmaps(
         # --------------------------------------------------
 
         ax.set_title(
-            f"Heatmap de {indicador}",
+            f"HEATMAP DE {indicador}",
             fontsize=14
         )
 
@@ -334,14 +366,14 @@ def generar_heatmaps(
                 .replace(" ", "_")
             )
 
-            ruta = os.path.join(
-                carpeta,
-                f"heatmap_{nombre_archivo}.png"
-            )
+            # Se construye la ruta completa dentro de la carpeta 
+            # ubicada en la raíz del proyecto. 
+            
+            ruta = ruta_carpeta / f"heatmap_{nombre_archivo}.png"
 
             plt.savefig(
                 ruta,
-                dpi=300,
+                dpi=300, # resolución en puntos por pulgada
                 bbox_inches="tight"
             )
 
@@ -350,7 +382,8 @@ def generar_heatmaps(
             print(f"Guardado: {ruta}")
 
 
-#######################BOXPLOTS#################################################################33
+### DIAGRAMAS DE CAJA (BOXPLOTS)------------------------------------------------------------------------------------------
+
 
 def generar_boxplots(
     df,
@@ -359,7 +392,23 @@ def generar_boxplots(
     carpeta="graficas_EDA"
 ):
 
-    os.makedirs(carpeta, exist_ok=True)
+    """
+    Genera diagramas de caja para analizar la distribución y
+    posibles valores atípicos de los indicadores financieros.
+
+    Parámetros-> df : dataframe que contiene los indicadores financieros,
+    indicadores : lista de indicadores que se desean graficar,
+    indicadores_notebook: lista de indicadores que se mostrarán directamente en el notebook.
+    carpeta : str, nombre de la carpeta donde se guardarán los gráficos.
+    Salida -> Ninguna, la función muestra o guarda los boxplots generados.
+    """
+
+    # Se construye la ruta de la carpeta de gráficos dentro de la
+    # raíz del proyecto.
+    ruta_carpeta = RAIZ_PROYECTO / carpeta
+
+    # Se crea la carpeta si no existe.
+    ruta_carpeta.mkdir(parents=True, exist_ok=True)
 
     if indicadores_notebook is None:
         indicadores_notebook = []
@@ -415,14 +464,14 @@ def generar_boxplots(
                 .replace(" ", "_")
             )
 
-            ruta = os.path.join(
-                carpeta,
-                f"boxplot_{nombre_archivo}.png"
-            )
+            # Se construye la ruta completa dentro de la carpeta
+            # de gráficos del proyecto.
+            ruta = ruta_carpeta / f"boxplot_{nombre_archivo}.png"
+
 
             plt.savefig(
                 ruta,
-                dpi=300,
+                dpi=300, # resolución en puntos por pulgada
                 bbox_inches="tight"
             )
 
@@ -432,9 +481,24 @@ def generar_boxplots(
 
 
 
-##############DETECTAR ATÍPICOS###########################################################
+#--------------------------------------------------------
+### FUNCIONES PARA DETECTAR ATÍPICOS POR MEDIO DEL MÉTODO DEL RANGO INTERCUARTÍLICO
+#-------------------------------------------------------
+
 
 def detectar_atipicos_iqr(df, indicadores):
+
+    """
+    Identifica valores atípicos de los indicadores mediante el
+    método del rango intercuartílico (IQR).
+
+    Parámetros-> df : dataFrame que contiene los indicadores financieros.
+    indicadores : lista de indicadores sobre los que se identificarán
+        posibles valores atípicos.
+
+    Salida-> tabla_atipicos:dataframe con los valores atípicos identificados, sus
+        límites inferior y superior, y la información de los cuartiles utilizados para su detección.
+    """
 
     resultados = []
 
@@ -455,29 +519,40 @@ def detectar_atipicos_iqr(df, indicadores):
         if len(serie) < 4:
             continue
 
-        # Cuartiles
+        # Q1 corresponde al percentil 25 y representa el primer
+        # cuartil de la distribución.
         Q1 = serie.quantile(0.25)
+
+        # Q3 corresponde al percentil 75 y representa el tercer
+        # cuartil de la distribución.
         Q3 = serie.quantile(0.75)
 
         # Rango intercuartílico
         IQR = Q3 - Q1
 
-        # Límites
+        # Se establecen los límites para identificar posibles
+        # valores atípicos utilizando la regla de 1.5 veces el IQR.
         limite_inferior = Q1 - 1.5 * IQR
         limite_superior = Q3 + 1.5 * IQR
 
-        # Identificar atípicos
+        
+        # Se identifica cada observación cuyo valor se encuentra
+        # fuera de los límites establecidos.
         mascara_atipico = (
             (df[indicador] < limite_inferior) |
             (df[indicador] > limite_superior)
         )
+
+        # Se conservan únicamente las observaciones identificadas
+        # como atípicas junto con su entidad, fecha y valor.
 
         datos_atipicos = df.loc[
             mascara_atipico,
             ["ENTIDAD", "FECHA", indicador]
         ].copy()
 
-        # Agregar información del indicador
+        # Se agregan los parámetros utilizados para detectar el atípico.
+        # Esto permite conocer el criterio aplicado a cada indicador.
         datos_atipicos["INDICADOR"] = indicador
         datos_atipicos["Q1"] = Q1
         datos_atipicos["Q3"] = Q3
@@ -485,7 +560,8 @@ def detectar_atipicos_iqr(df, indicadores):
         datos_atipicos["LIMITE_INFERIOR"] = limite_inferior
         datos_atipicos["LIMITE_SUPERIOR"] = limite_superior
 
-        # Clasificar según dirección del atípico
+        # Se clasifica el atípico según su posición respecto
+        # de los límites calculados.
         datos_atipicos["TIPO_ATIPICO"] = np.where(
             datos_atipicos[indicador] < limite_inferior,
             "Inferior",
@@ -494,7 +570,8 @@ def detectar_atipicos_iqr(df, indicadores):
 
         resultados.append(datos_atipicos)
 
-    # Unir resultados
+    # Si se encontraron atípicos en al menos un indicador,
+    # se concatenan todas las tablas en un único DataFrame.
     if resultados:
 
         tabla_atipicos = pd.concat(
