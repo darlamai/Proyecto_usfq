@@ -8,7 +8,15 @@ import numpy as np
 
 ruta = Path(__file__).parent.parent #Se obtiene la ruta raíz del proyecto
 ruta_data=ruta / "data" #Se construye la ruta hacia la carpeta data
-archivos=list(ruta_data.rglob("*.xlsx")) # Permite buscar todos los archivos de excel dentro de data y sus subcarpetas # El resultado es una lista de objetos Path
+
+archivos = [
+    archivo
+    for archivo in ruta_data.rglob("*")
+    if archivo.is_file()
+    and archivo.suffix.lower() in [".xlsx", ".xls"]
+    and not archivo.name.startswith("~$")
+] # Permite buscar todos los archivos de excel dentro de data y sus subcarpetas # El resultado es una lista de objetos Path
+
 
 # =========================
 # CONSTANTES
@@ -104,6 +112,8 @@ def procesar_indicadores(anio, archivos,meses, columnas_indicadores):
 
         # Verificar que el archivo corresponde al año
         if str(anio) in i.name:
+            print(f"Leyendo archivo: {i}")
+
 
             indicadores = pd.read_excel(
                 i,

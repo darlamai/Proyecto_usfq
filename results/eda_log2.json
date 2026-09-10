@@ -1,0 +1,68 @@
+{
+    "proceso": "Análisis Exploratorio de Datos",
+    "fecha_ejecucion": "2026-09-10T03:54:05.013436",
+    "secciones": {
+        "valores_altos_mejor_desempeno": {
+            "filas_eliminadas": 0,
+            "variables_eliminadas": [],
+            "metodo": "Rango intercuartílico (IQR)",
+            "decision": "Los valores atípicos fueron conservados."
+        },
+        "valores_bajos_mejor_desempeno": {
+            "filas_eliminadas": 0,
+            "variables_eliminadas": [
+                "MOROSIDAD DE LA CARTERA DE CREDITOS CONSUMO",
+                "MOROSIDAD DE LA CARTERA DE CRÉDITOS INMOBILIARIO",
+                "MOROSIDAD DE LA CARTERA DE CRÉDITOS MICROCRÉDITO"
+            ],
+            "cantidad_variables_eliminadas": 3,
+            "metodo": "Análisis exploratorio y evaluación de comparabilidad",
+            "decision": "Se eliminaron los indicadores de morosidad por segmento debido a diferencias en la especialización de las entidades y a la falta de comparabilidad entre instituciones."
+        },
+        "analisis_correlacion": {
+            "metodo": "Correlación de Pearson",
+            "objetivo": "Identificar relaciones lineales elevadas y posibles redundancias entre los indicadores financieros antes de aplicar PCA.",
+            "filas_eliminadas": 0,
+            "variables_eliminadas": [
+                "CARTERA IMPRODUCTIVA / CARTERA BRUTA",
+                "ACTIVOS IMPRODUCTIVOS NETOS / TOTAL ACTIVOS",
+                "CARTERA VENCIDA / CARTERA BRUTA",
+                "CARTERA QUE NO DEVENGA INTERESES / CARTERA BRUTA"
+            ],
+            "cantidad_variables_eliminadas": 4,
+            "decisiones": {
+                "CARTERA IMPRODUCTIVA / CARTERA BRUTA": {
+                    "correlacion": 1.0,
+                    "decision": "Eliminar",
+                    "justificacion": "Presenta correlación perfecta con MOROSIDAD DE LA CARTERA TOTAL y representa información redundante."
+                },
+                "ACTIVOS IMPRODUCTIVOS NETOS / TOTAL ACTIVOS": {
+                    "correlacion": -1.0,
+                    "decision": "Eliminar",
+                    "justificacion": "Presenta correlación negativa perfecta con ACTIVOS PRODUCTIVOS / TOTAL ACTIVOS, por lo que ambas variables representan información complementaria y redundante."
+                },
+                "CARTERA VENCIDA / CARTERA BRUTA": {
+                    "correlacion": 0.927,
+                    "decision": "Eliminar",
+                    "justificacion": "Presenta una relación elevada con MOROSIDAD DE LA CARTERA TOTAL y contribuye a la redundancia entre indicadores de deterioro de cartera."
+                },
+                "CARTERA QUE NO DEVENGA INTERESES / CARTERA BRUTA": {
+                    "correlacion": 0.973,
+                    "decision": "Eliminar",
+                    "justificacion": "Presenta una relación elevada con MOROSIDAD DE LA CARTERA TOTAL y contribuye a la redundancia entre indicadores de deterioro de cartera."
+                }
+            },
+            "variables_conservadas_por_informacion_complementaria": [
+                "GASTOS DE OPERACION ESTIMADOS / TOTAL ACTIVO PROMEDIO",
+                "GASTOS DE PERSONAL ESTIMADOS / ACTIVO PROMEDIO",
+                "RESULTADOS DEL EJERCICIO / PATRIMONIO PROMEDIO",
+                "RESULTADOS DEL EJERCICIO / ACTIVO PROMEDIO"
+            ],
+            "decision_general": "Se eliminaron únicamente variables que presentaron redundancia informativa y cuya exclusión permitió conservar un conjunto de indicadores financieros más diferenciado para las etapas posteriores de PCA y clustering. Las variables con correlaciones elevadas pero que aportan información complementaria fueron conservadas."
+        }
+    },
+    "base_final": {
+        "filas": 1207,
+        "columnas": 27
+    }
+}
