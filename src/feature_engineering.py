@@ -244,3 +244,30 @@ def unir_todos_indicadores(indicadores, indicadores_cartera):
 
     return lista_unida
 
+def detectar_duplicados(df):
+    """
+    Cuenta las observaciones duplicadas utilizando AÑO, MES y ENTIDAD
+    como llave lógica de identificación.
+    Parámetros-> df: dataframe a validar.
+    Salida-> número que indica la cantidad de observaciones según la 
+    llave definida"""
+    return df.duplicated(
+        subset=["AÑO", "MES", "ENTIDAD"]
+    ).sum()
+
+def detectar_infinitos(df):
+    """Cuenta los valores infinitos presentes en las variables numéricas.
+    Parámetros->df : dataframe que se desea validar.
+    Salida-> serie que indica el número de valores infinitos por variable numérica."""
+
+    # Se seleccionan únicamente las columnas numéricas, ya que
+    # los valores infinitos pueden afectar los análisis posteriores.
+    columnas_numericas = df.select_dtypes(
+        include="number"
+    ).columns
+
+    # Se cuentan los valores positivos y negativos infinitos
+    # presentes en cada variable.
+    return np.isinf(
+        df[columnas_numericas]
+    ).sum()
