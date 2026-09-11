@@ -1,6 +1,6 @@
 {
     "proceso": "Preprocesamiento de datos",
-    "fecha_ejecucion": "2026-09-10T03:53:38.822016",
+    "fecha_ejecucion": "2026-09-11T00:36:53.970507",
     "eliminaciones": [
         {
             "motivo": "Se eliminó una observación debido a valores nulos detectados en indicadores de cartera.debido a que la entidad entró en proceso de cierre y liquidaciónel 11 de Marzo de 2025",

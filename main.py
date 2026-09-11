@@ -54,13 +54,21 @@ def run_pca():
     """Ejecuta el cuaderno de Análisis de Componentes Principales."""
     _ejecutar_notebook("03.PCA.ipynb")
 
+def run_cluster():
+    """Ejecuta el cuaderno de Clustering."""
+    _ejecutar_notebook("04.Clustering.ipynb")
+
 
 def main():
     print("PROYECTO USFQ")
+    print("Identificación de perfiles financieros de las entidades bancarias privadas ecuatorianas y su caracterización temporal mediante técnicas de reducción de dimensionalidad y clustering.")
+    print("Darlyn Ludeña.")
+    print("11/09/2026")
 
     run_preprocessing()
     run_eda()
     run_pca()
+    run_cluster()
 
 
 if __name__ == "__main__":
