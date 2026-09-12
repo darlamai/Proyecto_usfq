@@ -64,11 +64,13 @@ def main():
     print("Identificación de perfiles financieros de las entidades bancarias privadas ecuatorianas y su caracterización temporal mediante técnicas de reducción de dimensionalidad y clustering.")
     print("Darlyn Ludeña.")
     print("11/09/2026")
+    print("NOTA: Ir a README.md en caso de no poder ejecutar el proyecto.")
 
     run_preprocessing()
     run_eda()
     run_pca()
     run_cluster()
+    print("IR A LA CARPETA DE RESULTADOS PARA VER LOS PERFILES DEFINIDOS")
 
 
 if __name__ == "__main__":
